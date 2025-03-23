@@ -13,26 +13,70 @@ services:
     volumes:
       - vault-data:/vault/data
     restart: always
-    healthcheck:
-      test: ["CMD", "/bin/vault", "status"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
-  app:
-    build: .
+  redis:
+    image: "redis:latest"
     ports:
-      - "3000:3000"
-    environment:
-      VAULT_ADDR: "http://vault:8200"
-      VAULT_TOKEN: "myroot"
-    volumes:
-      - .:/app  # OK if you're developing locally
-    depends_on:
-      vault:
-        condition: service_healthy
+     - "6379:6379"
 
-  
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true # Disable bootstrap checks for local setups
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_conf:/opt/sonarqube/conf
+      - sonarqube_logs:/opt/sonarqube/logs
+    
+  db:
+    image: postgres:latest # PostgreSQL database image, version 15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432" # Expose the PostgreSQL port if needed for external tools. Be cautious as exposing this port publicly can pose security risks; consider restricting access to trusted IPs.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    restart: always
+    ports:
+      - "8080:8080" # Or any port you prefer
+    depends_on:
+      - db
+    environment:
+      ADMINER_DEFAULT_SERVER: db 
+    networks:
+      - backend
+
+networks:
+  backend:
+
+  # app:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     VAULT_ADDR: "http://localhost:8200"
+  #     VAULT_TOKEN: "myroot"
+  #   volumes:
+  #     - .:/app  # OK if you're developing locally
+  #   depends_on:
+  #     vault
 
 volumes:
+  postgres_data:
   vault-data:
+  sonarqube_data:
+  sonarqube_conf:
+  sonarqube_logs:

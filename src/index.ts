@@ -1,54 +1,80 @@
+// import { initSentry } from './config/sentry';
+// import * as Sentry from '@sentry/node';
+
+import { LoggerManager } from './common/logger/LoggerManager';
+import { SentryLogger } from './common/logger/sentry.Logger';
+
+
 import express from 'express';
 import cors from 'cors';
 import { loadSecrets } from './config/env';
+import { connectMongo } from './db/mongodb';
+// import { connectPostgres } from './db/postgres';
+import caseRoutes from './routes/v1/caseRoutes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsDoc from 'swagger-jsdoc';
+import { swaggerOptions } from './docs/swaggerOptions';
 
+const PORT = process.env.PORT || 3000;
 
-//import { env } from './config/env';
-//import { connectMongo } from './db/mongo';
-//import { connectPostgres } from './db/postgres';
-import caseRoutes from './routes/caseRoutes';
+const createServer = () => {
+  const app = express();
 
-const app = express();
-const PORT = 3000;
+  // Middleware
+  app.use(cors());
+  app.use(express.json());
 
-app.use(cors());
-app.use(express.json());
+  // Routes
+  app.use('/api', caseRoutes);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerJsDoc(swaggerOptions)));
 
-(async () => {
+  return app;
+};
+
+const startServer = async () => {
+  try {
+    // Initialize Sentry
+    const sentryLogger = new SentryLogger(process.env.SENTRY_DSN);
+    LoggerManager.setLogger(sentryLogger);
+
+    // Load environment variables
     const env = await loadSecrets();
-    //await connectMongo();
-    //await connectPostgres();
-    //app.use('/uscis', caseRoutes);
-    //app.listen(PORT, () => {
-    //  console.log(`🚀 Server running on http://localhost:${PORT}`);
-    //});
-    //console.log(env.mongoUri);
-    //console.log(env.mongo.uri);
-    //console.log(env.postgres.uri);
-    //console.log(env.postgres.user);
-    //console.log(env.postgres.password);
-    //console.log(env.postgres.database);
-    //console.log(env.postgres.host);
-    //console.log(env.postgres.port);
-    //console.log(env.postgres.ssl);
-    //console.log(env.postgres.sslmode);
-    //console.log(env.postgres.sslcert);
-    //console.log(env.postgres.sslkey);
-    //console.log(env.postgres.sslrootcert);
-    //console.log(env.postgres.sslcrl);
-    //console.log(env.postgres.sslpassphrase);
-    //console.log(env.postgres.max);
-    //console.log(env.postgres.idleTimeoutMillis);
-    //console.log(env.postgres.connectionTimeoutMillis);
-    //console.log(env.postgres.statement_timeout);
-    //console.log(env.postgres.query_timeout);
-    //console.log(env.postgres.poolSize);
-    //console.log(env.postgres.poolIdleTimeout);
-    //console.log(env.postgres.poolReapInterval
-})();
 
-app.use('/uscis', caseRoutes);
+    // Connect to MongoDB
+    await connectMongo(env.mongoUri);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+    // Uncomment if PostgreSQL is needed
+    // await connectPostgres();
+
+    const app = createServer();
+
+    // Start the server
+    const server = app.listen(PORT, () => {
+      LoggerManager.info(`🚀 Server running on http://localhost:${PORT}`);
+
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGINT', async () => {
+      console.log('Shutting down server...');
+      server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+      });
+    });
+
+    process.on('SIGTERM', async () => {
+      console.log('Shutting down server...');
+      server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+      });
+    });
+  } catch (error) {
+    LoggerManager.error(`Error starting the server: ${error}`);
+    process.exit(1);
+  }
+};
+
+startServer();

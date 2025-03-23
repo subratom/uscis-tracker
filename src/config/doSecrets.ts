@@ -3,13 +3,14 @@ import cheerio from 'cheerio';
 import express from 'express';
 import dotenv from 'dotenv';
 import vault from 'node-vault';
+import { LoggerManager } from '../common/logger/LoggerManager';
 
 dotenv.config();
 
-
-const DO_API_TOKEN = process.env.DO_API_TOKEN || 'dop_v1_010c1ffb20c5a48945d0c85c135ed28085a7a103b53a36c09c6a2aefa75ec225';
+const DO_API_TOKEN = process.env.DO_API_TOKEN; // || 'dop_v1_010c1ffb20c5a48945d0c85c135ed28085a7a103b53a36c09c6a2aefa75ec225';
 
 if(!DO_API_TOKEN) {
+  LoggerManager.error('DO_API_TOKEN is missing');
   throw new Error('DO_API_TOKEN is missing');
 }
 
@@ -25,14 +26,14 @@ export const fetchSecrets = async(secretName: string): Promise<Record<string, st
   try {
     const vaultClient = vault({
       apiVersion: 'v1',
-      endpoint: 'http://vault:8200',
-      token: 'myroot'
+      endpoint: 'http://localhost:8200',
+      token: 'myroot',
     });
     
     const secret = await vaultClient.read(`secret/data/${secretName}`);
     return secret.data.data;
   } catch (error) {
-    console.error('Error fetching Vault secret:', error);
+    LoggerManager.error(`Error fetching Vault secret: ${error}`);
   }
 }
 

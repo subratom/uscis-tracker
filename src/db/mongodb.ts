@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
-import { loadSecrets } from '../config/env';
+//import { loadSecrets } from '../config/env';
 
 export const connectMongo = async (mongoUri: string) => {
     try {
+      console.log('🔗 Connecting to MongoDB...');
+      //console.log('mongoUri:', mongoUri);
       if (mongoose.connection.readyState === 1) {
         console.log('✅ MongoDB already connected');
         return;
