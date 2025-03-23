@@ -4,7 +4,6 @@ import mongoose from 'mongoose';
 export const connectMongo = async (mongoUri: string) => {
     try {
       console.log('🔗 Connecting to MongoDB...');
-      //console.log('mongoUri:', mongoUri);
       if (mongoose.connection.readyState === 1) {
         console.log('✅ MongoDB already connected');
         return;
