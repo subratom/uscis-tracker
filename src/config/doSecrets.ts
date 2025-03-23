@@ -7,7 +7,7 @@ import { LoggerManager } from '../common/logger/LoggerManager';
 
 dotenv.config();
 
-const DO_API_TOKEN = process.env.DO_API_TOKEN; // || 'dop_v1_010c1ffb20c5a48945d0c85c135ed28085a7a103b53a36c09c6a2aefa75ec225';
+const DO_API_TOKEN = process.env.DO_API_TOKEN; 
 
 if(!DO_API_TOKEN) {
   LoggerManager.error('DO_API_TOKEN is missing');
