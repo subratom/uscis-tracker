@@ -26,8 +26,8 @@ export const fetchSecrets = async(secretName: string): Promise<Record<string, st
   try {
     const vaultClient = vault({
       apiVersion: 'v1',
-      endpoint: 'http://localhost:8200',
-      token: 'myroot',
+      endpoint: process.env.VAULT_ADDR,
+      token: process.env.VAULT_TOKEN,
     });
     
     const secret = await vaultClient.read(`secret/data/${secretName}`);
